@@ -139,3 +139,98 @@ class WriteInvalidateWriteBack:
             cache.remove_block(tag)
 
         return "Replacement"
+
+class WriteOnce:
+    def __init__(self, bus):
+        self.bus = bus
+
+    def fetch_latest(self, cache, tag):
+
+        remote_blocks = self.bus.broadcast_read(
+            tag, cache.processor_id
+        )
+
+        for block in remote_blocks:
+
+            if block.state == CacheState.DIRTY:
+
+                value = block.value
+
+                self.bus.write_back_to_memory(tag, value)
+
+                block.state = CacheState.VALID
+
+                return value
+
+            elif block.state == CacheState.RES:
+
+                block.state = CacheState.VALID
+
+        return self.bus.read_from_memory(tag)
+
+    def read(self, cache, tag):
+
+        # Read-Hit
+        if cache.has_valid_block(tag):
+            return "Read-Hit"
+
+        # Read-Miss
+        value = self.fetch_latest(cache, tag)
+
+        cache.set_block(tag, value, CacheState.VALID)
+
+        return "Read-Miss"
+    def write(self, cache, tag, value):
+
+        if cache.has_valid_block(tag):
+
+            block = cache.get_block(tag)
+
+            # First write
+            if block.state == CacheState.VALID:
+
+                self.bus.broadcast_invalidate(
+                    tag, cache.processor_id
+                )
+
+                self.bus.write_through(tag, value)
+
+                block.value = value
+                block.state = CacheState.RES
+
+            # Subsequent writes
+            elif block.state in (
+                CacheState.RES, CacheState.DIRTY
+            ):
+
+                block.value = value
+                block.state = CacheState.DIRTY
+
+            return "Write-Hit"
+
+        # Write-Miss
+        self.fetch_latest(cache, tag)
+
+        self.bus.broadcast_invalidate(
+            tag, cache.processor_id
+        )
+
+        cache.set_block(tag, value, CacheState.DIRTY)
+
+        return "Write-Miss"
+
+    def replace(self, cache, tag):
+
+        block = cache.get_block(tag)
+
+        if block is not None:
+
+            if block.state == CacheState.DIRTY:
+
+                self.bus.write_back_to_memory(
+                    tag, block.value
+                )
+
+            cache.remove_block(tag)
+
+        return "Replacement"
