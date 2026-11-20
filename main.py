@@ -1,44 +1,40 @@
-from cache import Cache
-from memory import MainMemory
-from bus import SharedBus
-from protocols import WriteOnce
+import sys
 
-memory = MainMemory({"X": 5})
-
-caches = {
-    "P": Cache("P"),
-    "Q": Cache("Q")
-}
-
-bus = SharedBus(memory, caches)
-protocol = WriteOnce(bus)
-
-def show_state(event):
-    print("\nEvent:", event)
-    print("Memory:", memory.get_all())
-
-    for processor_id, cache in caches.items():
-        block = cache.get_block("X")
-
-        if block is None:
-            print(processor_id, "-", "-")
-        else:
-            print(processor_id, block.value, block.state.value)
+from parser import parse_input
+from simulator import CoherenceSimulator
 
 
-show_state("Initial State")
+def main():
 
-show_state(protocol.read(caches["P"], "X"))
+    filename = (
+        sys.argv[1] if len(sys.argv) > 1
+        else "input.txt"
+    )
 
-show_state(protocol.read(caches["Q"], "X"))
+    try:
 
-show_state(protocol.write(caches["Q"], "X", 10))
+        protocol, memory, processors, operations = (
+            parse_input(filename)
+        )
 
-show_state(protocol.read(caches["Q"], "X"))
+        simulator = CoherenceSimulator(
+            protocol,
+            memory,
+            processors,
+            operations
+        )
 
-show_state(protocol.write(caches["Q"], "X", 15))
+        simulator.run_all()
 
-show_state(protocol.write(caches["P"], "X", 20))
+        simulator.print_trace_table()
 
-show_state(protocol.read(caches["Q"], "X"))
+        simulator.print_summary()
 
+    except (OSError, ValueError) as error:
+
+        print(f"Error: {error}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

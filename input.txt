@@ -1,13 +1,11 @@
 PROTOCOL: WRITE_INVALIDATE_WRITE_BACK
-MEMORY: X=5, Y=10, Z=20
-PROCESSORS: P1, P2, P3
+MEMORY: X=5
+PROCESSORS: P, Q
 
-P1: Read(X)
-P2: Read(X)
-P2: Write(X, 10)
-P2: Read(X)
-P1: Read(Z)
-P3: Write(X, 15)
-P1: Write(X, 20)
-P2: Read(X)
-P1: Replace(X)
+P: Read(X)
+Q: Read(X)
+Q: Write(X, 10)
+Q: Read(X)
+Q: Write(X, 15)
+P: Write(X, 20)
+Q: Read(X)
