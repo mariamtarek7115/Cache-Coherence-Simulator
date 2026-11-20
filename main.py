@@ -1,7 +1,7 @@
 from cache import Cache
 from memory import MainMemory
 from bus import SharedBus
-from protocols import WriteInvalidateWriteThrough
+from protocols import WriteInvalidateWriteBack
 
 memory = MainMemory({"X": 5})
 
@@ -11,8 +11,7 @@ caches = {
 }
 
 bus = SharedBus(memory, caches)
-protocol = WriteInvalidateWriteThrough(bus)
-
+protocol = WriteInvalidateWriteBack(bus)
 
 def show_state(event):
     print("\nEvent:", event)
@@ -45,3 +44,9 @@ show_state(protocol.read(caches["Q"], "X"))
 
 print("\nInvalidation commands:", bus.invalidation_count)
 print("Write-backs:", bus.write_back_count)
+
+show_state(protocol.write(caches["P"], "X", 30))
+
+show_state(protocol.replace(caches["P"], "X"))
+
+print("Total write-backs:", bus.write_back_count)
